@@ -64,18 +64,24 @@ questions:
 	}
 }
 
-// TestSampleQuestionnaires checks that the job and project blanks decode.
-func TestSampleQuestionnaires(t *testing.T) {
-	// Each sample is a fill-in questionnaire for one resume entry kind.
-	paths := []string{
-		"examples/job.sample.json",
-		"examples/project.sample.json",
-	}
+// TestExampleJSON decodes every example document against the generated schema.
+func TestExampleJSON(t *testing.T) {
+	root := filepath.Join("resume-questionnaire", "examples")
 
-	// Decode every sample through the generated unmarshaler.
-	for _, path := range paths {
-		// Read the sample from the schema submodule.
-		data, err := os.ReadFile(filepath.Join("resume-questionnaire", path))
+	// Walk the examples tree so new JSON files are checked without a hand-maintained list.
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		// A walk error stops the scan.
+		if walkErr != nil {
+			return walkErr
+		}
+
+		// Directories and non-JSON notes are not questionnaires.
+		if entry.IsDir() || filepath.Ext(path) != ".json" {
+			return nil
+		}
+
+		// Read the example from the schema submodule.
+		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("read %s: %v", path, err)
 		}
@@ -85,9 +91,13 @@ func TestSampleQuestionnaires(t *testing.T) {
 			t.Fatalf("unmarshal %s: %v", path, err)
 		}
 
-		// A blank form still has an id and its question list.
-		if questionnaire.Id == "" || len(questionnaire.Questions) != 12 {
+		// Every example needs a join key and at least one question.
+		if questionnaire.Id == "" || len(questionnaire.Questions) == 0 {
 			t.Fatalf("%s: id %q, %d questions", path, questionnaire.Id, len(questionnaire.Questions))
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
