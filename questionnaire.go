@@ -6,205 +6,188 @@ import "encoding/json"
 import "fmt"
 import yaml "go.yaml.in/yaml/v4"
 import "regexp"
+import "time"
+import "unicode/utf8"
 
-type ResumeQuestionnaireV2 struct {
-	// Meta corresponds to the JSON schema field "meta".
-	Meta *ResumeQuestionnaireV2Meta `json:"meta,omitempty,omitzero" yaml:"meta,omitempty" mapstructure:"meta,omitempty"`
+// The schema version and any other tooling configuration lives here.
+type Meta struct {
+	// URL (as per RFC 3986) to latest version of this document.
+	Canonical *string `json:"canonical,omitempty,omitzero" yaml:"canonical,omitempty" mapstructure:"canonical,omitempty"`
 
-	// SchemaVersion corresponds to the JSON schema field "schemaVersion".
-	SchemaVersion string `json:"schemaVersion" yaml:"schemaVersion" mapstructure:"schemaVersion"`
+	// Using ISO 8601 with 'YYYY-MM-DDThh:mm:ss'.
+	LastModified *time.Time `json:"lastModified,omitempty,omitzero" yaml:"lastModified,omitempty" mapstructure:"lastModified,omitempty"`
 
-	// Sections corresponds to the JSON schema field "sections".
-	Sections []ResumeQuestionnaireV2SectionsElem `json:"sections" yaml:"sections" mapstructure:"sections"`
+	// A version field which follows semver - e.g. `1.0.0`. Regexp is per the
+	// recommendation of semver.org
+	Version string `json:"version" yaml:"version" mapstructure:"version"`
 }
 
-type ResumeQuestionnaireV2Meta struct {
-	// DateRange corresponds to the JSON schema field "dateRange".
-	DateRange *string `json:"dateRange,omitempty,omitzero" yaml:"dateRange,omitempty" mapstructure:"dateRange,omitempty"`
-
-	// ExperienceLabel corresponds to the JSON schema field "experienceLabel".
-	ExperienceLabel *string `json:"experienceLabel,omitempty,omitzero" yaml:"experienceLabel,omitempty" mapstructure:"experienceLabel,omitempty"`
-
-	// Location corresponds to the JSON schema field "location".
-	Location *string `json:"location,omitempty,omitzero" yaml:"location,omitempty" mapstructure:"location,omitempty"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Meta) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in Meta: required")
+	}
+	type Plain Meta
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if matched, _ := regexp.MatchString(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`, string(plain.Version)); !matched {
+		return fmt.Errorf("field %s pattern match: must match %s", "Version", `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+	}
+	*j = Meta(plain)
+	return nil
 }
 
-type ResumeQuestionnaireV2SectionsElem struct {
-	// Id corresponds to the JSON schema field "id".
-	Id string `json:"id" yaml:"id" mapstructure:"id"`
-
-	// Items corresponds to the JSON schema field "items".
-	Items []ResumeQuestionnaireV2SectionsElemItemsElem `json:"items" yaml:"items" mapstructure:"items"`
-
-	// Title corresponds to the JSON schema field "title".
-	Title string `json:"title" yaml:"title" mapstructure:"title"`
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (j *Meta) UnmarshalYAML(value *yaml.Node) error {
+	var raw map[string]interface{}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in Meta: required")
+	}
+	type Plain Meta
+	var plain Plain
+	if err := value.Decode(&plain); err != nil {
+		return err
+	}
+	if matched, _ := regexp.MatchString(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`, string(plain.Version)); !matched {
+		return fmt.Errorf("field %s pattern match: must match %s", "Version", `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+	}
+	*j = Meta(plain)
+	return nil
 }
 
-type ResumeQuestionnaireV2SectionsElemItemsElem struct {
+type Question struct {
 	// Answer corresponds to the JSON schema field "answer".
-	Answer *string `json:"answer,omitempty,omitzero" yaml:"answer,omitempty" mapstructure:"answer,omitempty"`
+	Answer string `json:"answer" yaml:"answer" mapstructure:"answer"`
 
-	// Entries corresponds to the JSON schema field "entries".
-	Entries []ResumeQuestionnaireV2SectionsElemItemsElemEntriesElem `json:"entries,omitempty,omitzero" yaml:"entries,omitempty" mapstructure:"entries,omitempty"`
+	// Question corresponds to the JSON schema field "question".
+	Question string `json:"question" yaml:"question" mapstructure:"question"`
+}
 
-	// Id corresponds to the JSON schema field "id".
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Question) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["answer"]; raw != nil && !ok {
+		return fmt.Errorf("field answer in Question: required")
+	}
+	if _, ok := raw["question"]; raw != nil && !ok {
+		return fmt.Errorf("field question in Question: required")
+	}
+	type Plain Question
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if utf8.RuneCountInString(string(plain.Question)) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "question", 1)
+	}
+	*j = Question(plain)
+	return nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (j *Question) UnmarshalYAML(value *yaml.Node) error {
+	var raw map[string]interface{}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+	if _, ok := raw["answer"]; raw != nil && !ok {
+		return fmt.Errorf("field answer in Question: required")
+	}
+	if _, ok := raw["question"]; raw != nil && !ok {
+		return fmt.Errorf("field question in Question: required")
+	}
+	type Plain Question
+	var plain Plain
+	if err := value.Decode(&plain); err != nil {
+		return err
+	}
+	if utf8.RuneCountInString(string(plain.Question)) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "question", 1)
+	}
+	*j = Question(plain)
+	return nil
+}
+
+type Questionnaire struct {
+	// Join key for one work, project, or volunteer entry. Must equal that entry's id.
 	Id string `json:"id" yaml:"id" mapstructure:"id"`
 
-	// Prompt corresponds to the JSON schema field "prompt".
-	Prompt string `json:"prompt" yaml:"prompt" mapstructure:"prompt"`
+	// The schema version and any other tooling configuration lives here. Copied from
+	// the resume schema meta object.
+	Meta Meta `json:"meta" yaml:"meta" mapstructure:"meta"`
 
-	// Repeatable corresponds to the JSON schema field "repeatable".
-	Repeatable *bool `json:"repeatable,omitempty,omitzero" yaml:"repeatable,omitempty" mapstructure:"repeatable,omitempty"`
+	// Question and answer pairs for this resume entry.
+	Questions []Question `json:"questions" yaml:"questions" mapstructure:"questions"`
 }
 
-type ResumeQuestionnaireV2SectionsElemItemsElemEntriesElem map[string]interface{}
-
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *ResumeQuestionnaireV2SectionsElemItemsElem) UnmarshalJSON(value []byte) error {
+func (j *Questionnaire) UnmarshalJSON(value []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(value, &raw); err != nil {
 		return err
 	}
 	if _, ok := raw["id"]; raw != nil && !ok {
-		return fmt.Errorf("field id in ResumeQuestionnaireV2SectionsElemItemsElem: required")
+		return fmt.Errorf("field id in Questionnaire: required")
 	}
-	if _, ok := raw["prompt"]; raw != nil && !ok {
-		return fmt.Errorf("field prompt in ResumeQuestionnaireV2SectionsElemItemsElem: required")
+	if _, ok := raw["meta"]; raw != nil && !ok {
+		return fmt.Errorf("field meta in Questionnaire: required")
 	}
-	type Plain ResumeQuestionnaireV2SectionsElemItemsElem
+	if _, ok := raw["questions"]; raw != nil && !ok {
+		return fmt.Errorf("field questions in Questionnaire: required")
+	}
+	type Plain Questionnaire
 	var plain Plain
 	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
-	*j = ResumeQuestionnaireV2SectionsElemItemsElem(plain)
+	if utf8.RuneCountInString(string(plain.Id)) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "id", 1)
+	}
+	if plain.Questions != nil && len(plain.Questions) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "questions", 1)
+	}
+	*j = Questionnaire(plain)
 	return nil
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler.
-func (j *ResumeQuestionnaireV2SectionsElemItemsElem) UnmarshalYAML(value *yaml.Node) error {
+func (j *Questionnaire) UnmarshalYAML(value *yaml.Node) error {
 	var raw map[string]interface{}
 	if err := value.Decode(&raw); err != nil {
 		return err
 	}
 	if _, ok := raw["id"]; raw != nil && !ok {
-		return fmt.Errorf("field id in ResumeQuestionnaireV2SectionsElemItemsElem: required")
+		return fmt.Errorf("field id in Questionnaire: required")
 	}
-	if _, ok := raw["prompt"]; raw != nil && !ok {
-		return fmt.Errorf("field prompt in ResumeQuestionnaireV2SectionsElemItemsElem: required")
+	if _, ok := raw["meta"]; raw != nil && !ok {
+		return fmt.Errorf("field meta in Questionnaire: required")
 	}
-	type Plain ResumeQuestionnaireV2SectionsElemItemsElem
+	if _, ok := raw["questions"]; raw != nil && !ok {
+		return fmt.Errorf("field questions in Questionnaire: required")
+	}
+	type Plain Questionnaire
 	var plain Plain
 	if err := value.Decode(&plain); err != nil {
 		return err
 	}
-	*j = ResumeQuestionnaireV2SectionsElemItemsElem(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ResumeQuestionnaireV2SectionsElem) UnmarshalJSON(value []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(value, &raw); err != nil {
-		return err
+	if utf8.RuneCountInString(string(plain.Id)) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "id", 1)
 	}
-	if _, ok := raw["id"]; raw != nil && !ok {
-		return fmt.Errorf("field id in ResumeQuestionnaireV2SectionsElem: required")
+	if plain.Questions != nil && len(plain.Questions) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "questions", 1)
 	}
-	if _, ok := raw["items"]; raw != nil && !ok {
-		return fmt.Errorf("field items in ResumeQuestionnaireV2SectionsElem: required")
-	}
-	if _, ok := raw["title"]; raw != nil && !ok {
-		return fmt.Errorf("field title in ResumeQuestionnaireV2SectionsElem: required")
-	}
-	type Plain ResumeQuestionnaireV2SectionsElem
-	var plain Plain
-	if err := json.Unmarshal(value, &plain); err != nil {
-		return err
-	}
-	if matched, _ := regexp.MatchString(`^[a-z][a-z0-9_]*$`, string(plain.Id)); !matched {
-		return fmt.Errorf("field %s pattern match: must match %s", "Id", `^[a-z][a-z0-9_]*$`)
-	}
-	*j = ResumeQuestionnaireV2SectionsElem(plain)
-	return nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (j *ResumeQuestionnaireV2SectionsElem) UnmarshalYAML(value *yaml.Node) error {
-	var raw map[string]interface{}
-	if err := value.Decode(&raw); err != nil {
-		return err
-	}
-	if _, ok := raw["id"]; raw != nil && !ok {
-		return fmt.Errorf("field id in ResumeQuestionnaireV2SectionsElem: required")
-	}
-	if _, ok := raw["items"]; raw != nil && !ok {
-		return fmt.Errorf("field items in ResumeQuestionnaireV2SectionsElem: required")
-	}
-	if _, ok := raw["title"]; raw != nil && !ok {
-		return fmt.Errorf("field title in ResumeQuestionnaireV2SectionsElem: required")
-	}
-	type Plain ResumeQuestionnaireV2SectionsElem
-	var plain Plain
-	if err := value.Decode(&plain); err != nil {
-		return err
-	}
-	if matched, _ := regexp.MatchString(`^[a-z][a-z0-9_]*$`, string(plain.Id)); !matched {
-		return fmt.Errorf("field %s pattern match: must match %s", "Id", `^[a-z][a-z0-9_]*$`)
-	}
-	*j = ResumeQuestionnaireV2SectionsElem(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ResumeQuestionnaireV2) UnmarshalJSON(value []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(value, &raw); err != nil {
-		return err
-	}
-	if _, ok := raw["schemaVersion"]; raw != nil && !ok {
-		return fmt.Errorf("field schemaVersion in ResumeQuestionnaireV2: required")
-	}
-	if _, ok := raw["sections"]; raw != nil && !ok {
-		return fmt.Errorf("field sections in ResumeQuestionnaireV2: required")
-	}
-	type Plain ResumeQuestionnaireV2
-	var plain Plain
-	if err := json.Unmarshal(value, &plain); err != nil {
-		return err
-	}
-	if plain.SchemaVersion != "2.0.0" {
-		return fmt.Errorf("field %s: must be equal to %s", "schemaVersion", "2.0.0")
-	}
-	if plain.Sections != nil && len(plain.Sections) < 1 {
-		return fmt.Errorf("field %s length: must be >= %d", "sections", 1)
-	}
-	*j = ResumeQuestionnaireV2(plain)
-	return nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (j *ResumeQuestionnaireV2) UnmarshalYAML(value *yaml.Node) error {
-	var raw map[string]interface{}
-	if err := value.Decode(&raw); err != nil {
-		return err
-	}
-	if _, ok := raw["schemaVersion"]; raw != nil && !ok {
-		return fmt.Errorf("field schemaVersion in ResumeQuestionnaireV2: required")
-	}
-	if _, ok := raw["sections"]; raw != nil && !ok {
-		return fmt.Errorf("field sections in ResumeQuestionnaireV2: required")
-	}
-	type Plain ResumeQuestionnaireV2
-	var plain Plain
-	if err := value.Decode(&plain); err != nil {
-		return err
-	}
-	if plain.SchemaVersion != "2.0.0" {
-		return fmt.Errorf("field %s: must be equal to %s", "schemaVersion", "2.0.0")
-	}
-	if plain.Sections != nil && len(plain.Sections) < 1 {
-		return fmt.Errorf("field %s length: must be >= %d", "sections", 1)
-	}
-	*j = ResumeQuestionnaireV2(plain)
+	*j = Questionnaire(plain)
 	return nil
 }

@@ -19,20 +19,10 @@ schema_questionnaire: SCHEMA_GO_PKG := go_resume_questionnaire
 schema_questionnaire: SCHEMA_PKG := resume-questionnaire/schemas
 schema_questionnaire:
 	$(GO_JSONSCHEMA) -e \
-		--schema-package=$(REPO_ROOT)/schemas/resume-questionnaire-export.schema.json=$(SCHEMA_GO_PKG) \
-		--schema-output=$(REPO_ROOT)/schemas/resume-questionnaire-export.schema.json=$(SCHEMA_AUTOGEN_DIR)/export.go \
-		--schema-root-type=$(REPO_ROOT)/schemas/resume-questionnaire-export.schema.json=ResumeQuestionnaireExportV1 \
-		--schema-package=$(REPO_ROOT)/schemas/resume-project-fragment.schema.json=$(SCHEMA_GO_PKG) \
-		--schema-output=$(REPO_ROOT)/schemas/resume-project-fragment.schema.json=$(SCHEMA_AUTOGEN_DIR)/project.go \
-		--schema-root-type=$(REPO_ROOT)/schemas/resume-project-fragment.schema.json=ResumeQuestionnaireProjectFragmentV1 \
-		--schema-package=$(REPO_ROOT)/schemas/resume-questionnaire-v2.schema.json=$(SCHEMA_GO_PKG) \
-		--schema-output=$(REPO_ROOT)/schemas/resume-questionnaire-v2.schema.json=$(SCHEMA_AUTOGEN_DIR)/questionnaire.go \
-		--schema-root-type=$(REPO_ROOT)/schemas/resume-questionnaire-v2.schema.json=ResumeQuestionnaireV2 \
-		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-questionnaire-export.schema.json \
-		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-project-fragment.schema.json \
-		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-questionnaire-v2.schema.json
+		--schema-package=$(REPO_ROOT)/schemas/questionnaire.schema.json=$(SCHEMA_GO_PKG) \
+		--schema-output=$(REPO_ROOT)/schemas/questionnaire.schema.json=$(SCHEMA_AUTOGEN_DIR)/questionnaire.go \
+		--schema-root-type=$(REPO_ROOT)/schemas/questionnaire.schema.json=Questionnaire \
+		$(SCHEMA_DIR)/$(SCHEMA_PKG)/questionnaire.schema.json
 	# go-jsonschema hardcodes gopkg.in/yaml.v3. Rewrite it to the YAML org fork.
 	sed -i 's|gopkg.in/yaml.v3|go.yaml.in/yaml/v4|g' \
-		$(SCHEMA_AUTOGEN_DIR)/export.go \
-		$(SCHEMA_AUTOGEN_DIR)/project.go \
 		$(SCHEMA_AUTOGEN_DIR)/questionnaire.go

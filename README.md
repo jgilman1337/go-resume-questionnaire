@@ -1,12 +1,14 @@
 # go-resume-questionnaire
 
-This repository generates Go types from the resume questionnaire JSON Schemas using `go-jsonschema`.
+This repository generates Go types from the resume questionnaire JSON Schema using `go-jsonschema`.
 
-The questionnaire package is a submodule at `resume-questionnaire`. The generated files are committed to this repo:
+The questionnaire package is a submodule at `resume-questionnaire`. The generated file is committed to this repo:
 
-- `export.go` (generated from `resume-questionnaire/schemas/resume-questionnaire-export.schema.json`)
-- `project.go` (generated from `resume-questionnaire/schemas/resume-project-fragment.schema.json`)
-- `questionnaire.go` (generated from `resume-questionnaire/schemas/resume-questionnaire-v2.schema.json`)
+- `questionnaire.go` (generated from `resume-questionnaire/schemas/questionnaire.schema.json`)
+
+A questionnaire is resume `meta` (copied from the resume schema), the `id` of one work, project, or volunteer entry, and a `questions` array of `{ "question", "answer" }`.
+
+YAML unmarshalling uses `go.yaml.in/yaml/v4`.
 
 ## Prerequisites
 
