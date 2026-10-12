@@ -4,7 +4,7 @@ This repository generates Go types from the resume questionnaire JSON Schema usi
 
 The questionnaire package is a submodule at `resume-questionnaire`. The generated file is committed to this repo:
 
-- `questionnaire.go` (generated from `resume-questionnaire/schemas/questionnaire.schema.json`)
+- `questionnaire.go` (generated from `resume-questionnaire/questionnaire.schema.json`)
 
 A questionnaire is resume `meta` (copied from the resume schema), the `id` of one work, project, or volunteer entry (or a stable id for the cover letter), a `role` of `project`, `work`, `volunteer`, or `coverletter`, and a `questions` array of `{ "question", "answer" }`.
 
