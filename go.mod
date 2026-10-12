@@ -2,7 +2,7 @@ module github.com/jgilman1337/go-resume-questionnaire
 
 go 1.26.0
 
-require gopkg.in/yaml.v3 v3.0.1
+require go.yaml.in/yaml/v4 v4.0.0-rc.6
 
 require (
 	dario.cat/mergo v1.0.2 // indirect

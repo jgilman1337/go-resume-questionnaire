@@ -4,7 +4,7 @@ package go_resume_questionnaire
 
 import "encoding/json"
 import "fmt"
-import yaml "gopkg.in/yaml.v3"
+import yaml "go.yaml.in/yaml/v4"
 import "unicode/utf8"
 
 // Optional. Links to separate project JSON files (paths relative to this job

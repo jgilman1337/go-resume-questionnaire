@@ -31,3 +31,8 @@ schema_questionnaire:
 		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-questionnaire-export.schema.json \
 		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-project-fragment.schema.json \
 		$(SCHEMA_DIR)/$(SCHEMA_PKG)/resume-questionnaire-v2.schema.json
+	# go-jsonschema hardcodes gopkg.in/yaml.v3. Rewrite it to the YAML org fork.
+	sed -i 's|gopkg.in/yaml.v3|go.yaml.in/yaml/v4|g' \
+		$(SCHEMA_AUTOGEN_DIR)/export.go \
+		$(SCHEMA_AUTOGEN_DIR)/project.go \
+		$(SCHEMA_AUTOGEN_DIR)/questionnaire.go
