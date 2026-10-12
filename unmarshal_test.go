@@ -15,6 +15,7 @@ func TestQuestionnaireUnmarshalJSON(t *testing.T) {
 	input := []byte(`{
 		"meta": {"version": "1.0.0"},
 		"id": "refund-hardening",
+		"role": "project",
 		"questions": [
 			{"question": "What did you ship?", "answer": "Cut refund latency."}
 		]
@@ -26,8 +27,8 @@ func TestQuestionnaireUnmarshalJSON(t *testing.T) {
 	}
 
 	// The join key is the resume entry id.
-	if questionnaire.Id != "refund-hardening" {
-		t.Fatalf("id: got %q", questionnaire.Id)
+	if questionnaire.Id != "refund-hardening" || questionnaire.Role != "project" {
+		t.Fatalf("id %q role %q", questionnaire.Id, questionnaire.Role)
 	}
 
 	// One answer pair is preserved.
@@ -43,6 +44,7 @@ func TestQuestionnaireUnmarshalYAML(t *testing.T) {
 meta:
   version: "1.0.0"
 id: riverbank
+role: work
 questions:
   - question: What was your role?
     answer: Senior engineer.
@@ -54,8 +56,8 @@ questions:
 	}
 
 	// The join key is the resume entry id.
-	if questionnaire.Id != "riverbank" {
-		t.Fatalf("id: got %q", questionnaire.Id)
+	if questionnaire.Id != "riverbank" || questionnaire.Role != "work" {
+		t.Fatalf("id %q role %q", questionnaire.Id, questionnaire.Role)
 	}
 
 	// One answer pair is preserved.

@@ -5,6 +5,7 @@ package go_resume_questionnaire
 import "encoding/json"
 import "fmt"
 import yaml "go.yaml.in/yaml/v4"
+import "reflect"
 import "regexp"
 import "time"
 import "unicode/utf8"
@@ -121,7 +122,9 @@ func (j *Question) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Questionnaire struct {
-	// Join key for one work, project, or volunteer entry. Must equal that entry's id.
+	// Join key for one work, project, or volunteer entry, or a stable id for the
+	// cover letter questionnaire. For work, project, and volunteer, must equal that
+	// entry's id.
 	Id string `json:"id" yaml:"id" mapstructure:"id"`
 
 	// The schema version and any other tooling configuration lives here. Copied from
@@ -130,6 +133,63 @@ type Questionnaire struct {
 
 	// Question and answer pairs for this resume entry.
 	Questions []Question `json:"questions" yaml:"questions" mapstructure:"questions"`
+
+	// Which kind of questionnaire this is.
+	Role QuestionnaireRole `json:"role" yaml:"role" mapstructure:"role"`
+}
+
+type QuestionnaireRole string
+
+const QuestionnaireRoleCoverletter QuestionnaireRole = "coverletter"
+const QuestionnaireRoleProject QuestionnaireRole = "project"
+const QuestionnaireRoleVolunteer QuestionnaireRole = "volunteer"
+const QuestionnaireRoleWork QuestionnaireRole = "work"
+
+var enumValues_QuestionnaireRole = []interface{}{
+	"project",
+	"work",
+	"volunteer",
+	"coverletter",
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (j *QuestionnaireRole) UnmarshalYAML(value *yaml.Node) error {
+	var v string
+	if err := value.Decode(&v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_QuestionnaireRole {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_QuestionnaireRole, v)
+	}
+	*j = QuestionnaireRole(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *QuestionnaireRole) UnmarshalJSON(value []byte) error {
+	var v string
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_QuestionnaireRole {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_QuestionnaireRole, v)
+	}
+	*j = QuestionnaireRole(v)
+	return nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -146,6 +206,9 @@ func (j *Questionnaire) UnmarshalJSON(value []byte) error {
 	}
 	if _, ok := raw["questions"]; raw != nil && !ok {
 		return fmt.Errorf("field questions in Questionnaire: required")
+	}
+	if _, ok := raw["role"]; raw != nil && !ok {
+		return fmt.Errorf("field role in Questionnaire: required")
 	}
 	type Plain Questionnaire
 	var plain Plain
@@ -176,6 +239,9 @@ func (j *Questionnaire) UnmarshalYAML(value *yaml.Node) error {
 	}
 	if _, ok := raw["questions"]; raw != nil && !ok {
 		return fmt.Errorf("field questions in Questionnaire: required")
+	}
+	if _, ok := raw["role"]; raw != nil && !ok {
+		return fmt.Errorf("field role in Questionnaire: required")
 	}
 	type Plain Questionnaire
 	var plain Plain
